@@ -4,13 +4,15 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, Table as TableIcon, BarChart3, Settings, 
-  RefreshCw, Package, Bell, Search, ChevronRight, HardDrive, UserCircle
+  RefreshCw, Package, Bell, Search, ChevronRight, HardDrive, UserCircle,
+  LayoutGrid
 } from 'lucide-react';
 
 import DashboardView from './views/Dashboard';
 import InventoryView from './views/Inventory';
 import AnalyticsView from './views/Analytics';
 import UploadView from './views/Upload';
+import ModuleExplorer from './views/ModuleExplorer';
 
 import './App.css';
 
@@ -82,6 +84,7 @@ const App: React.FC = () => {
             <p className="px-3 mb-2 text-xs font-semibold tracking-wider text-slate-500 uppercase">Dashboard</p>
             <div className="space-y-1">
               <SidebarItem icon={LayoutDashboard} label="Overview" path="/" active={location.pathname === '/'} />
+              <SidebarItem icon={LayoutGrid} label="Module Explorer" path="/explorer" active={location.pathname === '/explorer'} />
               <SidebarItem icon={TableIcon} label="Inventory Tracking" path="/inventory" active={location.pathname === '/inventory'} />
               <SidebarItem icon={BarChart3} label="Cost Analytics" path="/analytics" active={location.pathname === '/analytics'} />
             </div>
@@ -169,6 +172,7 @@ const App: React.FC = () => {
             <AnimatePresence mode="wait">
               <Routes location={location} key={location.pathname}>
                 <Route path="/" element={<DashboardView data={data} />} />
+                <Route path="/explorer" element={<ModuleExplorer data={data} onUpdate={fetchData} />} />
                 <Route path="/inventory" element={<InventoryView data={data} onUpdate={fetchData} />} />
                 <Route path="/analytics" element={<AnalyticsView data={data} />} />
                 <Route path="/upload" element={<UploadView onSync={fetchData} />} />
