@@ -297,9 +297,10 @@ const InventoryView = ({ data, onUpdate }: any) => {
                       : <Square size={20} className="text-slate-300" />}
                   </button>
                 </th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">ID</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Module / Category</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Description</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">PR No</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">ETA</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Urgency</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Remarks</th>
@@ -315,7 +316,6 @@ const InventoryView = ({ data, onUpdate }: any) => {
                         {isSelected ? <CheckSquare size={20} className="text-blue-600" /> : <Square size={20} className="text-slate-200 group-hover:text-slate-300" />}
                       </button>
                     </td>
-                    <td className="px-6 py-4 text-xs font-black text-slate-900">{item['Bom Line No']}</td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1.5">
                         <span className="inline-flex px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-100 text-[10px] font-bold w-fit uppercase tracking-wider">{item.Module}</span>
@@ -324,15 +324,15 @@ const InventoryView = ({ data, onUpdate }: any) => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-xs font-bold text-slate-900 leading-relaxed mb-1">{item.Description}</div>
-                      <div className="text-[10px] font-bold text-slate-400">
-                        {item['Vendor Name'] || 'No Supplier Specified'}
-                        {item['Estimate Delivery Date'] && (
-                          <span className="ml-2 text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 font-black">ETA: {item['Estimate Delivery Date']}</span>
-                        )}
-                        {item['Pr No'] && (
-                          <span className="ml-2 text-[9px] bg-slate-50 text-slate-500 px-1.5 py-0.5 rounded border border-slate-100 font-black">PR: {item['Pr No']}</span>
-                        )}
-                      </div>
+                      <div className="text-[10px] font-bold text-slate-400">{item['Vendor Name'] || 'No Supplier Specified'}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-xs font-bold text-slate-600">{item['Pr No'] || '-'}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`text-xs font-bold ${item['Estimate Delivery Date'] ? 'text-amber-600' : 'text-slate-300'}`}>
+                        {item['Estimate Delivery Date'] || '-'}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">

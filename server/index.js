@@ -30,9 +30,9 @@ app.get('/api/data', (req, res) => {
             return res.status(404).json({ error: 'Excel file not found' });
         }
 
-        const workbook = xlsx.readFile(EXCEL_FILE);
+        const workbook = xlsx.readFile(EXCEL_FILE, { cellDates: true, dateNF: 'yyyy-mm-dd' });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rawData = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+        const rawData = xlsx.utils.sheet_to_json(sheet, { header: 1, raw: false });
         
         console.log(`Raw rows found: ${rawData.length}`);
         
