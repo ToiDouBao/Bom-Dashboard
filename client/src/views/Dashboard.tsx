@@ -6,12 +6,13 @@ import {
 } from 'recharts';
 import { DollarSign, CheckCircle, AlertCircle, Package } from 'lucide-react';
 
-// Color Mapping: Pending (Yellow), Arrived (Blue), Collected (Green), Delayed (Red)
+// Color Mapping: Pending (Yellow/Slate), Arrived (Blue), Collected (Green), Delayed (Red)
 const STATUS_COLORS: Record<string, string> = {
-  'Pending': '#f59e0b',   // Yellow/Amber
-  'Arrived': '#3b82f6',   // Blue
-  'Collected': '#10b981', // Green
-  'Delayed': '#ef4444'    // Red
+  'Pending (PR)': '#94a3b8',  // Slate
+  'Pending (ETA)': '#f59e0b', // Amber/Yellow
+  'Arrived': '#3b82f6',       // Blue
+  'Collected': '#10b981',     // Green
+  'Delayed': '#ef4444'        // Red
 };
 
 const DashboardView = ({ data }: any) => {
@@ -26,7 +27,8 @@ const DashboardView = ({ data }: any) => {
   const chartData = useMemo(() => {
     const modules: Record<string, number> = {};
     const statuses = [
-      { name: 'Pending', value: 0 },
+      { name: 'Pending (PR)', value: 0 },
+      { name: 'Pending (ETA)', value: 0 },
       { name: 'Arrived', value: 0 },
       { name: 'Collected', value: 0 },
       { name: 'Delayed', value: 0 }
@@ -37,7 +39,6 @@ const DashboardView = ({ data }: any) => {
       modules[mod] = (modules[mod] || 0) + (item['Total Price'] || 0);
       const s = statuses.find(s => s.name === item['Actual Status']);
       if (s) s.value++;
-      else statuses[0].value++;
     });
 
     return {

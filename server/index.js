@@ -52,11 +52,19 @@ app.get('/api/data', (req, res) => {
             headers.forEach((h, i) => { item[h] = row[i]; });
             const lineNo = item['Bom Line No']?.toString();
             const update = db.updates[lineNo] || {};
+
+            let defaultStatus = 'Pending (PR)';
+            if (item['Estimate Delivery Date']) {
+                defaultStatus = 'Pending (ETA)';
+            } else if (item['Pr No']) {
+                defaultStatus = 'Pending (PR)';
+            }
+
             return {
                 ...item,
                 'Module': normalize(item['Module']),
                 'Total Price': parseFloat(item['Total Price']) || 0,
-                'Actual Status': update.status || 'Pending',
+                'Actual Status': update.status || defaultStatus,
                 'Attention Needed': update.attention || false,
                 'Remark': update.remark || ''
             };

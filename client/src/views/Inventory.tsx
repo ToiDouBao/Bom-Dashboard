@@ -25,10 +25,11 @@ const InventoryView = ({ data, onUpdate }: any) => {
     if (total === 0) return null;
 
     const statusCounts = {
-      Pending: filteredData.filter((i: any) => i['Actual Status'] === 'Pending').length,
-      Arrived: filteredData.filter((i: any) => i['Actual Status'] === 'Arrived').length,
-      Collected: filteredData.filter((i: any) => i['Actual Status'] === 'Collected').length,
-      Delayed: filteredData.filter((i: any) => i['Actual Status'] === 'Delayed').length,
+      'Pending (PR)': filteredData.filter((i: any) => i['Actual Status'] === 'Pending (PR)').length,
+      'Pending (ETA)': filteredData.filter((i: any) => i['Actual Status'] === 'Pending (ETA)').length,
+      'Arrived': filteredData.filter((i: any) => i['Actual Status'] === 'Arrived').length,
+      'Collected': filteredData.filter((i: any) => i['Actual Status'] === 'Collected').length,
+      'Delayed': filteredData.filter((i: any) => i['Actual Status'] === 'Delayed').length,
     };
     
     const totalCost = filteredData.reduce((acc: number, i: any) => acc + (Number(i['Total Price']) || 0), 0);
@@ -90,7 +91,8 @@ const InventoryView = ({ data, onUpdate }: any) => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Pending': return 'text-amber-500 fill-amber-500';
+      case 'Pending (PR)': return 'text-slate-400 fill-slate-400';
+      case 'Pending (ETA)': return 'text-amber-500 fill-amber-500';
       case 'Arrived': return 'text-blue-500 fill-blue-500';
       case 'Collected': return 'text-emerald-500 fill-emerald-500';
       case 'Delayed': return 'text-red-500 fill-red-500';
@@ -160,13 +162,14 @@ const InventoryView = ({ data, onUpdate }: any) => {
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Status Breakdown</p>
             <div className="flex items-center gap-1.5">
-              {(['Pending', 'Arrived', 'Collected', 'Delayed'] as const).map((s) => {
+              {(['Pending (PR)', 'Pending (ETA)', 'Arrived', 'Collected', 'Delayed'] as const).map((s) => {
                 const count = stats.statusCounts[s];
                 return (
                   <div key={s} className="group relative flex-1">
                     <div 
                       className={`h-2 rounded-full transition-all duration-500
-                        ${s === 'Pending' ? 'bg-amber-400' : ''}
+                        ${s === 'Pending (PR)' ? 'bg-slate-300' : ''}
+                        ${s === 'Pending (ETA)' ? 'bg-amber-400' : ''}
                         ${s === 'Arrived' ? 'bg-blue-400' : ''}
                         ${s === 'Collected' ? 'bg-emerald-400' : ''}
                         ${s === 'Delayed' ? 'bg-red-400' : ''}
@@ -181,7 +184,8 @@ const InventoryView = ({ data, onUpdate }: any) => {
               })}
             </div>
             <div className="flex justify-between mt-2 text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
-              <span>{stats.statusCounts.Pending}P</span>
+              <span>{stats.statusCounts['Pending (PR)']}PR</span>
+              <span>{stats.statusCounts['Pending (ETA)']}ETA</span>
               <span>{stats.statusCounts.Arrived}A</span>
               <span>{stats.statusCounts.Collected}C</span>
               <span>{stats.statusCounts.Delayed}D</span>
@@ -197,7 +201,7 @@ const InventoryView = ({ data, onUpdate }: any) => {
             initial={{ y: 100, x: '-50%', opacity: 0 }}
             animate={{ y: 0, x: '-50%', opacity: 1 }}
             exit={{ y: 100, x: '-50%', opacity: 0 }}
-            className="fixed bottom-10 left-1/2 bg-slate-900 border border-slate-800 text-white px-8 py-5 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50 flex items-center gap-10 min-w-[700px]"
+            className="fixed bottom-10 left-1/2 bg-slate-900 border border-slate-800 text-white px-8 py-5 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50 flex items-center gap-10 min-w-[800px]"
           >
             <div className="flex items-center gap-4 pr-10 border-r border-slate-800">
               <div className="flex flex-col">
@@ -210,13 +214,14 @@ const InventoryView = ({ data, onUpdate }: any) => {
               <div className="space-y-2">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">Apply Status Update</span>
                 <div className="flex gap-2">
-                  {['Pending', 'Arrived', 'Collected', 'Delayed'].map(s => (
+                  {['Pending (PR)', 'Pending (ETA)', 'Arrived', 'Collected', 'Delayed'].map(s => (
                     <button 
                       key={s}
                       disabled={isUpdating}
                       onClick={() => executeBatch({ status: s })}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border active:scale-95 disabled:opacity-50
-                        ${s === 'Pending' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500 hover:text-white' : ''}
+                      className={`px-3 py-2 rounded-xl text-[10px] font-bold transition-all border active:scale-95 disabled:opacity-50
+                        ${s === 'Pending (PR)' ? 'bg-slate-500/10 text-slate-400 border-slate-500/20 hover:bg-slate-500 hover:text-white' : ''}
+                        ${s === 'Pending (ETA)' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500 hover:text-white' : ''}
                         ${s === 'Arrived' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500 hover:text-white' : ''}
                         ${s === 'Collected' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500 hover:text-white' : ''}
                         ${s === 'Delayed' ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500 hover:text-white' : ''}
@@ -319,7 +324,15 @@ const InventoryView = ({ data, onUpdate }: any) => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-xs font-bold text-slate-900 leading-relaxed mb-1">{item.Description}</div>
-                      <div className="text-[10px] font-bold text-slate-400">{item['Vendor Name'] || 'No Supplier Specified'}</div>
+                      <div className="text-[10px] font-bold text-slate-400">
+                        {item['Vendor Name'] || 'No Supplier Specified'}
+                        {item['Estimate Delivery Date'] && (
+                          <span className="ml-2 text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 font-black">ETA: {item['Estimate Delivery Date']}</span>
+                        )}
+                        {item['Pr No'] && (
+                          <span className="ml-2 text-[9px] bg-slate-50 text-slate-500 px-1.5 py-0.5 rounded border border-slate-100 font-black">PR: {item['Pr No']}</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -329,7 +342,8 @@ const InventoryView = ({ data, onUpdate }: any) => {
                           onChange={(e) => updateItem(item['Bom Line No'], { 'Actual Status': e.target.value })}
                           className="text-[11px] font-bold bg-white border border-slate-200 rounded-xl px-3 py-1.5 focus:ring-4 focus:ring-blue-500/5 outline-none cursor-pointer transition-all shadow-sm"
                         >
-                          <option value="Pending">Pending</option>
+                          <option value="Pending (PR)">Pending (PR)</option>
+                          <option value="Pending (ETA)">Pending (ETA)</option>
                           <option value="Arrived">Arrived</option>
                           <option value="Collected">Collected</option>
                           <option value="Delayed">Delayed</option>
