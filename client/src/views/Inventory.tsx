@@ -299,7 +299,7 @@ const InventoryView = ({ data, onUpdate }: any) => {
                 </th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Module / Category</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Description</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">PR No</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">PO No</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">ETA</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Urgency</th>
@@ -327,7 +327,7 @@ const InventoryView = ({ data, onUpdate }: any) => {
                       <div className="text-[10px] font-bold text-slate-400">{item['Vendor Name'] || 'No Supplier Specified'}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-xs font-bold text-slate-600">{item['Pr No'] || '-'}</span>
+                      <span className="text-xs font-bold text-slate-600">{item['Po No'] || '-'}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`text-xs font-bold ${item['Estimate Delivery Date'] ? 'text-amber-600' : 'text-slate-300'}`}>

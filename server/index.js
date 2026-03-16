@@ -56,8 +56,6 @@ app.get('/api/data', (req, res) => {
             let defaultStatus = 'Pending (PR)';
             if (item['Estimate Delivery Date']) {
                 defaultStatus = 'Pending (ETA)';
-            } else if (item['Pr No']) {
-                defaultStatus = 'Pending (PR)';
             }
 
             return {
