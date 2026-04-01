@@ -3,22 +3,60 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, AlertCircle, MessageSquare, Filter, CheckSquare, Square, 
-  X, Circle, Loader2, DollarSign, PackageCheck, TrendingUp
+  X, Circle, Loader2, DollarSign, PackageCheck, TrendingUp,
+  ArrowUpDown, ChevronUp, ChevronDown
 } from 'lucide-react';
 
 const InventoryView = ({ data, onUpdate }: any) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
-  const filteredData = useMemo(() => 
-    data.filter((item: any) => 
+  const filteredData = useMemo(() => {
+    // 1. Filter
+    let result = data.filter((item: any) => 
       item.Description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item['Bom Line No']?.toString().includes(searchTerm) ||
       item.Module?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.Category?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  , [data, searchTerm]);
+      item.Category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item['Po No']?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // 2. Sort
+    if (sortConfig !== null) {
+      result.sort((a: any, b: any) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+
+        aValue = (aValue || '').toString().toLowerCase();
+        bValue = (bValue || '').toString().toLowerCase();
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [data, searchTerm, sortConfig]);
+
+  const requestSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const SortIndicator = ({ columnKey }: { columnKey: string }) => {
+    if (!sortConfig || sortConfig.key !== columnKey) return <ArrowUpDown size={12} className="ml-1 opacity-20" />;
+    return sortConfig.direction === 'asc' ? <ChevronUp size={12} className="ml-1 text-blue-500" /> : <ChevronDown size={12} className="ml-1 text-blue-500" />;
+  };
 
   const stats = useMemo(() => {
     const total = filteredData.length;
@@ -273,7 +311,7 @@ const InventoryView = ({ data, onUpdate }: any) => {
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
             <input 
               type="text" 
-              placeholder="Search BOM (Module, Category, Description)..." 
+              placeholder="Search BOM (Module, Category, Description, PO)..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500/10 transition-all"
@@ -297,12 +335,36 @@ const InventoryView = ({ data, onUpdate }: any) => {
                       : <Square size={20} className="text-slate-300" />}
                   </button>
                 </th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Module / Category</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Description</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">PO No</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">ETA</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Urgency</th>
+                <th className="px-6 py-4 cursor-pointer group" onClick={() => requestSort('Module')}>
+                  <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
+                    Module / Category <SortIndicator columnKey="Module" />
+                  </div>
+                </th>
+                <th className="px-6 py-4 cursor-pointer group" onClick={() => requestSort('Description')}>
+                  <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
+                    Description <SortIndicator columnKey="Description" />
+                  </div>
+                </th>
+                <th className="px-6 py-4 cursor-pointer group" onClick={() => requestSort('Po No')}>
+                  <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
+                    PO No <SortIndicator columnKey="Po No" />
+                  </div>
+                </th>
+                <th className="px-6 py-4 cursor-pointer group" onClick={() => requestSort('Estimate Delivery Date')}>
+                  <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
+                    ETA <SortIndicator columnKey="Estimate Delivery Date" />
+                  </div>
+                </th>
+                <th className="px-6 py-4 cursor-pointer group" onClick={() => requestSort('Actual Status')}>
+                  <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
+                    Status <SortIndicator columnKey="Actual Status" />
+                  </div>
+                </th>
+                <th className="px-6 py-4 cursor-pointer group text-center" onClick={() => requestSort('Attention Needed')}>
+                  <div className="flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
+                    Urgency <SortIndicator columnKey="Attention Needed" />
+                  </div>
+                </th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Remarks</th>
               </tr>
             </thead>
