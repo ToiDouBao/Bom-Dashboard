@@ -12,6 +12,7 @@ const InventoryView = ({ data, onUpdate }: any) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [batchRemark, setBatchRemark] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
   const filteredData = useMemo(() => {
@@ -91,7 +92,6 @@ const InventoryView = ({ data, onUpdate }: any) => {
         'Actual Status': item['Actual Status'] || '-',
         'Bom Status': item['Status'] || '-',
         'Remark': item.Remark || '-',
-        'Urgent Attention': item['Attention Needed'] ? 'YES' : 'NO',
         'Vendor': item['Vendor Name'] || '-'
       }));
 
@@ -107,7 +107,6 @@ const InventoryView = ({ data, onUpdate }: any) => {
         { wch: 15 }, // Status
         { wch: 15 }, // Bom Status
         { wch: 30 }, // Remark
-        { wch: 15 }, // Urgency
         { wch: 25 }, // Vendor
       ];
 
@@ -351,6 +350,30 @@ const InventoryView = ({ data, onUpdate }: any) => {
                   </button>
                 </div>
               </div>
+              <div className="w-px h-10 bg-slate-800" />
+
+              <div className="space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">Batch Remark</span>
+                <div className="flex gap-2">
+                  <input 
+                    type="text"
+                    value={batchRemark}
+                    onChange={(e) => setBatchRemark(e.target.value)}
+                    placeholder="Type remark..."
+                    className="bg-slate-800 border border-slate-700 text-white px-3 py-2 rounded-xl text-[10px] font-bold focus:ring-2 focus:ring-blue-500/50 outline-none w-40"
+                  />
+                  <button 
+                    disabled={isUpdating || !batchRemark.trim()}
+                    onClick={() => {
+                      executeBatch({ remark: batchRemark });
+                      setBatchRemark('');
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-bold hover:bg-blue-500 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
             </div>
 
             <button 
@@ -390,7 +413,10 @@ const InventoryView = ({ data, onUpdate }: any) => {
         </div>
 
         {/* Improved Table Body */}
-        <div className="overflow-auto flex-1 scroll-smooth">
+        <div 
+          className="overflow-auto flex-1 scroll-smooth"
+          style={{ paddingBottom: selectedItems.length > 0 ? '120px' : '0' }}
+        >
           <table className="w-full text-left border-collapse table-fixed">
             <thead className="sticky top-0 z-10 bg-white/80 backdrop-blur-md">
               <tr className="border-b border-slate-100">
