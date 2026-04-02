@@ -8,8 +8,8 @@ import { DollarSign, CheckCircle, AlertCircle, Package } from 'lucide-react';
 
 // Color Mapping: Pending (Yellow/Slate), Arrived (Blue), Collected (Green), Delayed (Red)
 const STATUS_COLORS: Record<string, string> = {
-  'Pending (PR)': '#94a3b8',  // Slate
-  'Pending (ETA)': '#f59e0b', // Amber/Yellow
+  'Pending for PR': '#94a3b8',  // Slate
+  'Pending with ETA': '#f59e0b', // Amber/Yellow
   'Arrived': '#3b82f6',       // Blue
   'Collected': '#10b981',     // Green
   'Delayed': '#ef4444'        // Red
@@ -27,8 +27,8 @@ const DashboardView = ({ data }: any) => {
   const chartData = useMemo(() => {
     const modules: Record<string, number> = {};
     const statuses = [
-      { name: 'Pending (PR)', value: 0 },
-      { name: 'Pending (ETA)', value: 0 },
+      { name: 'Pending for PR', value: 0 },
+      { name: 'Pending with ETA', value: 0 },
       { name: 'Arrived', value: 0 },
       { name: 'Collected', value: 0 },
       { name: 'Delayed', value: 0 }

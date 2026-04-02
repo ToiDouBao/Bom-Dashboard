@@ -53,9 +53,9 @@ app.get('/api/data', (req, res) => {
             const lineNo = item['Bom Line No']?.toString();
             const update = db.updates[lineNo] || {};
 
-            let defaultStatus = 'Pending (PR)';
+            let defaultStatus = 'Pending for PR';
             if (item['Estimate Delivery Date']) {
-                defaultStatus = 'Pending (ETA)';
+                defaultStatus = 'Pending with ETA';
             }
 
             return {

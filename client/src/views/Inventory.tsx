@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, AlertCircle, MessageSquare, Filter, CheckSquare, Square, 
   X, Circle, Loader2, DollarSign, PackageCheck, TrendingUp,
-  ArrowUpDown, ChevronUp, ChevronDown
+  ArrowUpDown, ChevronUp, ChevronDown, Download
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const InventoryView = ({ data, onUpdate }: any) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,6 +21,7 @@ const InventoryView = ({ data, onUpdate }: any) => {
       item['Bom Line No']?.toString().includes(searchTerm) ||
       item.Module?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.Category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item['Part No']?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
       item['Po No']?.toString().toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -58,13 +60,70 @@ const InventoryView = ({ data, onUpdate }: any) => {
     return sortConfig.direction === 'asc' ? <ChevronUp size={12} className="ml-1 text-blue-500" /> : <ChevronDown size={12} className="ml-1 text-blue-500" />;
   };
 
+  const exportToExcel = () => {
+    const workbook = XLSX.utils.book_new();
+    
+    // Group data by module
+    const modules: Record<string, any[]> = {};
+    data.forEach((item: any) => {
+      const modName = (item.Module || 'Unassigned').substring(0, 31).replace(/[\[\]\*\?\:\/\\]/g, ''); // Excel sheet name constraints
+      if (!modules[modName]) modules[modName] = [];
+      modules[modName].push(item);
+    });
+
+    // Create a sheet for each module
+    Object.keys(modules).sort().forEach(modName => {
+      const modData = modules[modName];
+      
+      // Sort by category then by description within the module
+      const sortedModData = [...modData].sort((a, b) => {
+        const catCompare = (a.Category || '').localeCompare(b.Category || '');
+        if (catCompare !== 0) return catCompare;
+        return (a.Description || '').localeCompare(b.Description || '');
+      });
+
+      const exportRows = sortedModData.map(item => ({
+        'Category': item.Category || '-',
+        'Part No': item['Part No'] || '-',
+        'Description': item.Description || '-',
+        'PO No': item['Po No'] || '-',
+        'ETA': item['Estimate Delivery Date'] || '-',
+        'Actual Status': item['Actual Status'] || '-',
+        'Bom Status': item['Status'] || '-',
+        'Remark': item.Remark || '-',
+        'Urgent Attention': item['Attention Needed'] ? 'YES' : 'NO',
+        'Vendor': item['Vendor Name'] || '-'
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportRows);
+      
+      // Set column widths
+      worksheet['!cols'] = [
+        { wch: 15 }, // Category
+        { wch: 15 }, // Part No
+        { wch: 45 }, // Description
+        { wch: 15 }, // PO No
+        { wch: 12 }, // ETA
+        { wch: 15 }, // Status
+        { wch: 15 }, // Bom Status
+        { wch: 30 }, // Remark
+        { wch: 15 }, // Urgency
+        { wch: 25 }, // Vendor
+      ];
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, modName);
+    });
+
+    XLSX.writeFile(workbook, `BOM_Full_Status_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   const stats = useMemo(() => {
     const total = filteredData.length;
     if (total === 0) return null;
 
     const statusCounts = {
-      'Pending (PR)': filteredData.filter((i: any) => i['Actual Status'] === 'Pending (PR)').length,
-      'Pending (ETA)': filteredData.filter((i: any) => i['Actual Status'] === 'Pending (ETA)').length,
+      'Pending for PR': filteredData.filter((i: any) => i['Actual Status'] === 'Pending for PR').length,
+      'Pending with ETA': filteredData.filter((i: any) => i['Actual Status'] === 'Pending with ETA').length,
       'Arrived': filteredData.filter((i: any) => i['Actual Status'] === 'Arrived').length,
       'Collected': filteredData.filter((i: any) => i['Actual Status'] === 'Collected').length,
       'Delayed': filteredData.filter((i: any) => i['Actual Status'] === 'Delayed').length,
@@ -129,8 +188,8 @@ const InventoryView = ({ data, onUpdate }: any) => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Pending (PR)': return 'text-slate-400 fill-slate-400';
-      case 'Pending (ETA)': return 'text-amber-500 fill-amber-500';
+      case 'Pending for PR': return 'text-slate-400 fill-slate-400';
+      case 'Pending with ETA': return 'text-amber-500 fill-amber-500';
       case 'Arrived': return 'text-blue-500 fill-blue-500';
       case 'Collected': return 'text-emerald-500 fill-emerald-500';
       case 'Delayed': return 'text-red-500 fill-red-500';
@@ -200,14 +259,14 @@ const InventoryView = ({ data, onUpdate }: any) => {
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Status Breakdown</p>
             <div className="flex items-center gap-1.5">
-              {(['Pending (PR)', 'Pending (ETA)', 'Arrived', 'Collected', 'Delayed'] as const).map((s) => {
+              {(['Pending for PR', 'Pending with ETA', 'Arrived', 'Collected', 'Delayed'] as const).map((s) => {
                 const count = stats.statusCounts[s];
                 return (
                   <div key={s} className="group relative flex-1">
                     <div 
                       className={`h-2 rounded-full transition-all duration-500
-                        ${s === 'Pending (PR)' ? 'bg-slate-300' : ''}
-                        ${s === 'Pending (ETA)' ? 'bg-amber-400' : ''}
+                        ${s === 'Pending for PR' ? 'bg-slate-300' : ''}
+                        ${s === 'Pending with ETA' ? 'bg-amber-400' : ''}
                         ${s === 'Arrived' ? 'bg-blue-400' : ''}
                         ${s === 'Collected' ? 'bg-emerald-400' : ''}
                         ${s === 'Delayed' ? 'bg-red-400' : ''}
@@ -222,8 +281,8 @@ const InventoryView = ({ data, onUpdate }: any) => {
               })}
             </div>
             <div className="flex justify-between mt-2 text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
-              <span>{stats.statusCounts['Pending (PR)']}PR</span>
-              <span>{stats.statusCounts['Pending (ETA)']}ETA</span>
+              <span>{stats.statusCounts['Pending for PR']}PR</span>
+              <span>{stats.statusCounts['Pending with ETA']}ETA</span>
               <span>{stats.statusCounts.Arrived}A</span>
               <span>{stats.statusCounts.Collected}C</span>
               <span>{stats.statusCounts.Delayed}D</span>
@@ -252,14 +311,14 @@ const InventoryView = ({ data, onUpdate }: any) => {
               <div className="space-y-2">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">Apply Status Update</span>
                 <div className="flex gap-2">
-                  {['Pending (PR)', 'Pending (ETA)', 'Arrived', 'Collected', 'Delayed'].map(s => (
+                  {['Pending for PR', 'Pending with ETA', 'Arrived', 'Collected', 'Delayed'].map(s => (
                     <button 
                       key={s}
                       disabled={isUpdating}
                       onClick={() => executeBatch({ status: s })}
                       className={`px-3 py-2 rounded-xl text-[10px] font-bold transition-all border active:scale-95 disabled:opacity-50
-                        ${s === 'Pending (PR)' ? 'bg-slate-500/10 text-slate-400 border-slate-500/20 hover:bg-slate-500 hover:text-white' : ''}
-                        ${s === 'Pending (ETA)' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500 hover:text-white' : ''}
+                        ${s === 'Pending for PR' ? 'bg-slate-500/10 text-slate-400 border-slate-500/20 hover:bg-slate-500 hover:text-white' : ''}
+                        ${s === 'Pending with ETA' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500 hover:text-white' : ''}
                         ${s === 'Arrived' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500 hover:text-white' : ''}
                         ${s === 'Collected' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500 hover:text-white' : ''}
                         ${s === 'Delayed' ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500 hover:text-white' : ''}
@@ -319,53 +378,65 @@ const InventoryView = ({ data, onUpdate }: any) => {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{filteredData.length} Items</span>
+            <button 
+              onClick={exportToExcel}
+              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 text-xs font-bold active:scale-95"
+            >
+              <Download size={16} />
+              <span>Export Report</span>
+            </button>
             <button className="p-2.5 bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-100 transition-colors border border-slate-200"><Filter size={18} /></button>
           </div>
         </div>
 
         {/* Improved Table Body */}
         <div className="overflow-auto flex-1 scroll-smooth">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse table-fixed">
             <thead className="sticky top-0 z-10 bg-white/80 backdrop-blur-md">
               <tr className="border-b border-slate-100">
-                <th className="px-6 py-4 w-12">
+                <th className="px-4 py-4 w-12">
                   <button onClick={toggleSelectAll} className="p-1 hover:bg-slate-50 rounded-lg transition-colors">
                     {selectedItems.length === filteredData.length && filteredData.length > 0 
                       ? <CheckSquare size={20} className="text-blue-600" /> 
                       : <Square size={20} className="text-slate-300" />}
                   </button>
                 </th>
-                <th className="px-6 py-4 cursor-pointer group" onClick={() => requestSort('Module')}>
+                <th className="px-4 py-4 w-32 cursor-pointer group" onClick={() => requestSort('Module')}>
                   <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
-                    Module / Category <SortIndicator columnKey="Module" />
+                    Module / Cat <SortIndicator columnKey="Module" />
                   </div>
                 </th>
-                <th className="px-6 py-4 cursor-pointer group" onClick={() => requestSort('Description')}>
+                <th className="px-4 py-4 w-32 cursor-pointer group" onClick={() => requestSort('Part No')}>
+                  <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
+                    Part No <SortIndicator columnKey="Part No" />
+                  </div>
+                </th>
+                <th className="px-4 py-4 w-80 cursor-pointer group" onClick={() => requestSort('Description')}>
                   <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
                     Description <SortIndicator columnKey="Description" />
                   </div>
                 </th>
-                <th className="px-6 py-4 cursor-pointer group" onClick={() => requestSort('Po No')}>
+                <th className="px-4 py-4 w-28 cursor-pointer group" onClick={() => requestSort('Po No')}>
                   <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
                     PO No <SortIndicator columnKey="Po No" />
                   </div>
                 </th>
-                <th className="px-6 py-4 cursor-pointer group" onClick={() => requestSort('Estimate Delivery Date')}>
+                <th className="px-4 py-4 w-28 cursor-pointer group" onClick={() => requestSort('Estimate Delivery Date')}>
                   <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
                     ETA <SortIndicator columnKey="Estimate Delivery Date" />
                   </div>
                 </th>
-                <th className="px-6 py-4 cursor-pointer group" onClick={() => requestSort('Actual Status')}>
+                <th className="px-4 py-4 w-40 cursor-pointer group" onClick={() => requestSort('Actual Status')}>
                   <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
                     Status <SortIndicator columnKey="Actual Status" />
                   </div>
                 </th>
-                <th className="px-6 py-4 cursor-pointer group text-center" onClick={() => requestSort('Attention Needed')}>
+                <th className="px-4 py-4 w-20 cursor-pointer group text-center" onClick={() => requestSort('Attention Needed')}>
                   <div className="flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
-                    Urgency <SortIndicator columnKey="Attention Needed" />
+                    Urg <SortIndicator columnKey="Attention Needed" />
                   </div>
                 </th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Remarks</th>
+                <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Remarks</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -373,56 +444,59 @@ const InventoryView = ({ data, onUpdate }: any) => {
                 const isSelected = selectedItems.includes(item['Bom Line No'].toString());
                 return (
                   <tr key={item['Bom Line No']} className={`group transition-all ${isSelected ? 'bg-blue-50/30' : 'hover:bg-slate-50/50'}`}>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       <button onClick={() => toggleSelectItem(item['Bom Line No'].toString())}>
                         {isSelected ? <CheckSquare size={20} className="text-blue-600" /> : <Square size={20} className="text-slate-200 group-hover:text-slate-300" />}
                       </button>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1.5">
-                        <span className="inline-flex px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-100 text-[10px] font-bold w-fit uppercase tracking-wider">{item.Module}</span>
-                        <span className="inline-flex px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 text-[10px] font-bold w-fit uppercase tracking-wider">{item.Category}</span>
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="inline-flex px-1.5 py-0.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-100 text-[9px] font-bold w-fit uppercase truncate max-w-full">{item.Module}</span>
+                        <span className="inline-flex px-1.5 py-0.5 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 text-[9px] font-bold w-fit uppercase truncate max-w-full">{item.Category}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-xs font-bold text-slate-900 leading-relaxed mb-1">{item.Description}</div>
-                      <div className="text-[10px] font-bold text-slate-400">{item['Vendor Name'] || 'No Supplier Specified'}</div>
+                    <td className="px-4 py-4">
+                      <span className="text-[11px] font-bold text-slate-600 truncate block">{item['Part No'] || '-'}</span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="text-xs font-bold text-slate-600">{item['Po No'] || '-'}</span>
+                    <td className="px-4 py-4">
+                      <div className="text-[11px] font-bold text-slate-900 leading-snug mb-0.5 truncate">{item.Description}</div>
+                      <div className="text-[9px] font-bold text-slate-400 truncate">{item['Vendor Name'] || 'No Supplier'}</div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`text-xs font-bold ${item['Estimate Delivery Date'] ? 'text-amber-600' : 'text-slate-300'}`}>
+                    <td className="px-4 py-4">
+                      <span className="text-[11px] font-bold text-slate-600 truncate block">{item['Po No'] || '-'}</span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`text-[11px] font-bold ${item['Estimate Delivery Date'] ? 'text-amber-600' : 'text-slate-300'} truncate block`}>
                         {item['Estimate Delivery Date'] || '-'}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <Circle size={8} className={getStatusColor(item['Actual Status'])} />
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <Circle size={6} className={getStatusColor(item['Actual Status'])} />
                         <select 
                           value={item['Actual Status']} 
                           onChange={(e) => updateItem(item['Bom Line No'], { 'Actual Status': e.target.value })}
-                          className="text-[11px] font-bold bg-white border border-slate-200 rounded-xl px-3 py-1.5 focus:ring-4 focus:ring-blue-500/5 outline-none cursor-pointer transition-all shadow-sm"
+                          className="text-[10px] font-bold bg-white border border-slate-200 rounded-lg px-2 py-1 focus:ring-2 focus:ring-blue-500/10 outline-none cursor-pointer transition-all shadow-sm w-full"
                         >
-                          <option value="Pending (PR)">Pending (PR)</option>
-                          <option value="Pending (ETA)">Pending (ETA)</option>
+                          <option value="Pending for PR">Pending for PR</option>
+                          <option value="Pending with ETA">Pending with ETA</option>
                           <option value="Arrived">Arrived</option>
                           <option value="Collected">Collected</option>
                           <option value="Delayed">Delayed</option>
                         </select>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-4 py-4 text-center">
                       <button 
                         onClick={() => updateItem(item['Bom Line No'], { 'Attention Needed': !item['Attention Needed'] })}
-                        className={`p-2 rounded-xl border transition-all ${item['Attention Needed'] ? 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-600/20' : 'bg-white text-slate-200 border-slate-100 hover:border-slate-300 hover:text-slate-400'}`}
+                        className={`p-1.5 rounded-lg border transition-all ${item['Attention Needed'] ? 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-600/20' : 'bg-white text-slate-200 border-slate-100 hover:border-slate-300 hover:text-slate-400'}`}
                       >
-                        <AlertCircle size={18} />
+                        <AlertCircle size={16} />
                       </button>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 bg-slate-50 border border-transparent focus-within:bg-white focus-within:border-blue-100 rounded-xl px-4 py-2 transition-all">
-                        <MessageSquare size={14} className="text-slate-300" />
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2 bg-slate-50 border border-transparent focus-within:bg-white focus-within:border-blue-100 rounded-xl px-3 py-1.5 transition-all w-full">
+                        <MessageSquare size={12} className="text-slate-300 shrink-0" />
                         <input 
                           type="text" 
                           defaultValue={item.Remark}
