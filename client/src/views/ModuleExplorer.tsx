@@ -15,6 +15,9 @@ const ModuleExplorer = ({ data, onUpdate }: any) => {
     const stats: Record<string, any> = {};
     
     data.forEach((item: any) => {
+      // Exclude 'Other' status from module-level item and cost tracking
+      if (item['Actual Status'] === 'Other') return;
+
       const mod = item.Module || 'Unassigned';
       if (!stats[mod]) {
         stats[mod] = {

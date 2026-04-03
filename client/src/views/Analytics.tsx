@@ -11,6 +11,9 @@ const AnalyticsView = ({ data }: any) => {
     const vendors: Record<string, number> = {};
 
     data.forEach((item: any) => {
+      // Exclude 'Other' status from analytics and cost tracking
+      if (item['Actual Status'] === 'Other') return;
+
       const mod = item.Module || 'Unknown';
       modules[mod] = (modules[mod] || 0) + (item['Total Price'] || 0);
       const ven = item['Vendor Name'] || 'Other';

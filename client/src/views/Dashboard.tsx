@@ -12,16 +12,19 @@ const STATUS_COLORS: Record<string, string> = {
   'Pending with ETA': '#f59e0b', // Amber/Yellow
   'Arrived': '#3b82f6',       // Blue
   'Collected': '#10b981',     // Green
-  'Delayed': '#ef4444'        // Red
+  'Delayed': '#ef4444',       // Red
+  'Other': '#cbd5e1'          // Light Slate
 };
 
 const DashboardView = ({ data }: any) => {
   const stats = useMemo(() => {
-    const totalCost = data.reduce((sum: any, item: any) => sum + (item['Total Price'] || 0), 0);
-    const collectedCount = data.filter((item: any) => item['Actual Status'] === 'Collected').length;
-    const attentionCount = data.filter((item: any) => item['Attention Needed']).length;
-    const progress = data.length > 0 ? (collectedCount / data.length) * 100 : 0;
-    return { totalCost, progress, attentionCount, totalItems: data.length };
+    // Exclude 'Other' from progress tracking
+    const trackingData = data.filter((item: any) => item['Actual Status'] !== 'Other');
+    const totalCost = trackingData.reduce((sum: any, item: any) => sum + (item['Total Price'] || 0), 0);
+    const collectedCount = trackingData.filter((item: any) => item['Actual Status'] === 'Collected').length;
+    const attentionCount = trackingData.filter((item: any) => item['Attention Needed']).length;
+    const progress = trackingData.length > 0 ? (collectedCount / trackingData.length) * 100 : 0;
+    return { totalCost, progress, attentionCount, totalItems: trackingData.length };
   }, [data]);
 
   const chartData = useMemo(() => {
@@ -31,15 +34,26 @@ const DashboardView = ({ data }: any) => {
       { name: 'Pending with ETA', value: 0 },
       { name: 'Arrived', value: 0 },
       { name: 'Collected', value: 0 },
-      { name: 'Delayed', value: 0 }
+      { name: 'Delayed', value: 0 },
+      { name: 'Other', value: 0 }
     ];
 
     data.forEach((item: any) => {
+      // Use all data for module costs, or exclude 'Other'? 
+      // User said "it wont count as a part of the item", usually implies cost too.
+      if (item['Actual Status'] === 'Other') return;
+
       const mod = item.Module || 'Unknown';
       modules[mod] = (modules[mod] || 0) + (item['Total Price'] || 0);
       const s = statuses.find(s => s.name === item['Actual Status']);
       if (s) s.value++;
     });
+
+    // Handle 'Other' status count separately if we want to show it in the pie chart
+    // but the loop above skips it. Let's include it in the pie chart but exclude from costs.
+    const otherCount = data.filter((item: any) => item['Actual Status'] === 'Other').length;
+    const otherStatus = statuses.find(s => s.name === 'Other');
+    if (otherStatus) otherStatus.value = otherCount;
 
     return {
       modules: Object.entries(modules).map(([name, value]) => ({ name, value }))

@@ -23,7 +23,8 @@ const InventoryView = ({ data, onUpdate }: any) => {
       item.Module?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.Category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item['Part No']?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item['Po No']?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      item['Po No']?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item['Actual Status']?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     // 2. Sort
@@ -117,8 +118,12 @@ const InventoryView = ({ data, onUpdate }: any) => {
   };
 
   const stats = useMemo(() => {
-    const total = filteredData.length;
-    if (total === 0) return null;
+    const totalWithOther = filteredData.length;
+    // Exclude 'Other' from being counted as a "part of the item"
+    const trackingData = filteredData.filter((i: any) => i['Actual Status'] !== 'Other');
+    const total = trackingData.length;
+    
+    if (totalWithOther === 0) return null;
 
     const statusCounts = {
       'Pending for PR': filteredData.filter((i: any) => i['Actual Status'] === 'Pending for PR').length,
@@ -126,17 +131,18 @@ const InventoryView = ({ data, onUpdate }: any) => {
       'Arrived': filteredData.filter((i: any) => i['Actual Status'] === 'Arrived').length,
       'Collected': filteredData.filter((i: any) => i['Actual Status'] === 'Collected').length,
       'Delayed': filteredData.filter((i: any) => i['Actual Status'] === 'Delayed').length,
+      'Other': filteredData.filter((i: any) => i['Actual Status'] === 'Other').length,
     };
     
-    const totalCost = filteredData.reduce((acc: number, i: any) => acc + (Number(i['Total Price']) || 0), 0);
-    const collectedCost = filteredData
+    const totalCost = trackingData.reduce((acc: number, i: any) => acc + (Number(i['Total Price']) || 0), 0);
+    const collectedCost = trackingData
       .filter((i: any) => i['Actual Status'] === 'Collected')
       .reduce((acc: number, i: any) => acc + (Number(i['Total Price']) || 0), 0);
     
-    const completionRate = Math.round((statusCounts.Collected / total) * 100);
+    const completionRate = total > 0 ? Math.round((statusCounts.Collected / total) * 100) : 0;
     const costProgress = totalCost > 0 ? Math.round((collectedCost / totalCost) * 100) : 0;
 
-    return { total, statusCounts, totalCost, collectedCost, completionRate, costProgress };
+    return { total, totalWithOther, statusCounts, totalCost, collectedCost, completionRate, costProgress };
   }, [filteredData]);
 
   const toggleSelectAll = () => {
@@ -192,6 +198,7 @@ const InventoryView = ({ data, onUpdate }: any) => {
       case 'Arrived': return 'text-blue-500 fill-blue-500';
       case 'Collected': return 'text-emerald-500 fill-emerald-500';
       case 'Delayed': return 'text-red-500 fill-red-500';
+      case 'Other': return 'text-slate-400 fill-slate-200';
       default: return 'text-slate-300 fill-slate-300';
     }
   };
@@ -258,7 +265,7 @@ const InventoryView = ({ data, onUpdate }: any) => {
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Status Breakdown</p>
             <div className="flex items-center gap-1.5">
-              {(['Pending for PR', 'Pending with ETA', 'Arrived', 'Collected', 'Delayed'] as const).map((s) => {
+              {(['Pending for PR', 'Pending with ETA', 'Arrived', 'Collected', 'Delayed', 'Other'] as const).map((s) => {
                 const count = stats.statusCounts[s];
                 return (
                   <div key={s} className="group relative flex-1">
@@ -269,6 +276,7 @@ const InventoryView = ({ data, onUpdate }: any) => {
                         ${s === 'Arrived' ? 'bg-blue-400' : ''}
                         ${s === 'Collected' ? 'bg-emerald-400' : ''}
                         ${s === 'Delayed' ? 'bg-red-400' : ''}
+                        ${s === 'Other' ? 'bg-slate-100' : ''}
                       `}
                       style={{ width: '100%', opacity: count > 0 ? 1 : 0.2 }}
                     />
@@ -285,6 +293,7 @@ const InventoryView = ({ data, onUpdate }: any) => {
               <span>{stats.statusCounts.Arrived}A</span>
               <span>{stats.statusCounts.Collected}C</span>
               <span>{stats.statusCounts.Delayed}D</span>
+              <span>{stats.statusCounts.Other}O</span>
             </div>
           </div>
         </div>
@@ -310,7 +319,7 @@ const InventoryView = ({ data, onUpdate }: any) => {
               <div className="space-y-2">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">Apply Status Update</span>
                 <div className="flex gap-2">
-                  {['Pending for PR', 'Pending with ETA', 'Arrived', 'Collected', 'Delayed'].map(s => (
+                  {['Pending for PR', 'Pending with ETA', 'Arrived', 'Collected', 'Delayed', 'Other'].map(s => (
                     <button 
                       key={s}
                       disabled={isUpdating}
@@ -321,6 +330,7 @@ const InventoryView = ({ data, onUpdate }: any) => {
                         ${s === 'Arrived' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500 hover:text-white' : ''}
                         ${s === 'Collected' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500 hover:text-white' : ''}
                         ${s === 'Delayed' ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500 hover:text-white' : ''}
+                        ${s === 'Other' ? 'bg-slate-500/10 text-slate-300 border-slate-500/20 hover:bg-slate-500 hover:text-white' : ''}
                       `}
                     >
                       {isUpdating ? <Loader2 size={14} className="animate-spin mx-auto" /> : s}
@@ -509,6 +519,7 @@ const InventoryView = ({ data, onUpdate }: any) => {
                           <option value="Arrived">Arrived</option>
                           <option value="Collected">Collected</option>
                           <option value="Delayed">Delayed</option>
+                          <option value="Other">Other</option>
                         </select>
                       </div>
                     </td>

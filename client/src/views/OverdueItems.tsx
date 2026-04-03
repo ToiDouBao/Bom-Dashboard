@@ -9,12 +9,12 @@ const OverdueItemsView = ({ data, onUpdate }: any) => {
     today.setHours(0, 0, 0, 0);
 
     return data.filter((item: any) => {
-      // Rule 1: Not collected
-      const isNotCollected = item['Actual Status'] !== 'Collected';
+      // Rule 1: Not collected AND not "Other"
+      const isTracked = item['Actual Status'] !== 'Collected' && item['Actual Status'] !== 'Other';
       
       // Rule 2: Has ETA and ETA <= today
       const etaStr = item['Estimate Delivery Date'];
-      if (!etaStr || !isNotCollected) return false;
+      if (!etaStr || !isTracked) return false;
       
       const etaDate = new Date(etaStr);
       etaDate.setHours(0, 0, 0, 0);
