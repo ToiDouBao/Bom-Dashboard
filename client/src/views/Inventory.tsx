@@ -13,6 +13,7 @@ const InventoryView = ({ data, onUpdate }: any) => {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [batchRemark, setBatchRemark] = useState('');
+  const [hideCollected, setHideCollected] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
   const filteredData = useMemo(() => {
@@ -27,7 +28,12 @@ const InventoryView = ({ data, onUpdate }: any) => {
       item['Actual Status']?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // 2. Sort
+    // 2. Hide Collected
+    if (hideCollected) {
+      result = result.filter((item: any) => item['Actual Status'] !== 'Collected');
+    }
+
+    // 3. Sort
     if (sortConfig !== null) {
       result.sort((a: any, b: any) => {
         let aValue = a[sortConfig.key];
@@ -411,6 +417,17 @@ const InventoryView = ({ data, onUpdate }: any) => {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{filteredData.length} Items</span>
+            <button 
+              onClick={() => setHideCollected(!hideCollected)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all text-xs font-bold active:scale-95 border ${
+                hideCollected 
+                ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm' 
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <PackageCheck size={16} className={hideCollected ? 'text-blue-600' : 'text-slate-400'} />
+              <span>{hideCollected ? 'Showing Pending' : 'Hide Collected'}</span>
+            </button>
             <button 
               onClick={exportToExcel}
               className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 text-xs font-bold active:scale-95"
