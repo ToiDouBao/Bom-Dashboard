@@ -95,6 +95,8 @@ const InventoryView = ({ data, onUpdate }: any) => {
         'Part No': item['Part No'] || '-',
         'Description': item.Description || '-',
         'PO No': item['Po No'] || '-',
+        'Buyer Last Submitted Date': item['Buyer Last Submitted Date'] || '-',
+        'Pr Updated Date': item['Pr Updated Date'] || '-',
         'ETA': item['Estimate Delivery Date'] || '-',
         'Actual Status': item['Actual Status'] || '-',
         'Bom Status': item['Status'] || '-',
@@ -110,6 +112,8 @@ const InventoryView = ({ data, onUpdate }: any) => {
         { wch: 15 }, // Part No
         { wch: 45 }, // Description
         { wch: 15 }, // PO No
+        { wch: 25 }, // Buyer Last Submitted Date
+        { wch: 20 }, // Pr Updated Date
         { wch: 12 }, // ETA
         { wch: 15 }, // Status
         { wch: 15 }, // Bom Status
